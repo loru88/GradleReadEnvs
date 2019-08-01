@@ -1,0 +1,44 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = 'hello.HelloWorld'
+setEnvVarRunConfiguration("env.file")
+
+task(runWithEnvs, dependsOn: 'classes', type: JavaExec) {
+    main = 'hello.HelloWorld'
+    classpath = sourceSets.main.runtimeClasspath
+    description "custom tasks for reading environment variable from a file"
+    args 'Gradle Argument'
+
+    // read and parse the file https://stackoverflow.com/a/50509513
+    File envFile = new File('env.file');
+    if (envFile.exists()) {
+        envFile.readLines().each() {
+            def (key, value) = it.tokenize('=')
+            environment key, value
+        }
+    }
+}
+
+// https://blog.jdriven.com/2017/01/gradle-goodness-passing-environment-variable-via-delegate-run-action-intellij-idea/
+def setEnvVarRunConfiguration(filename) {
+
+    // Find task by type JavaExec and matching
+    // task name for configuration name.
+    final javaExecRunConfiguration = { task ->
+        task instanceof JavaExec && task.name == "runWithEnvs"
+    }
+
+    tasks.matching(javaExecRunConfiguration).all {
+        // read and parse the file https://stackoverflow.com/a/50509513
+        File envFile = new File(filename);
+        if (envFile.exists()) {
+            envFile.readLines().each() {
+                def (key, value) = it.tokenize('=')
+                environment key, value
+            }
+        }
+    }
+}
+
+defaultTasks 'runSimple'
